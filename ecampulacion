@@ -1,0 +1,49 @@
+class Student:
+    def __init__(self, sid, name, gpa=0.0):
+        self.sid = sid       # public
+        self.name = name     # public
+        self._credits = 0    # protected
+        self.__gpa = gpa     # private
+
+    # Getter GPA
+    def get_gpa(self):
+        return self.__gpa
+
+    # Setter GPA dengan validasi
+    def set_gpa(self, value):
+        if not (0.0 <= value <= 4.0):
+            raise ValueError("GPA harus antara 0.0 dan 4.0")
+        self.__gpa = round(value, 2)
+
+    # Menambah jumlah SKS
+    def add_credits(self, n):
+        if n < 0:
+            raise ValueError("credits tidak boleh negatif")
+        self._credits += n
+
+    # Method klasifikasi GPA
+    def classify(self):
+        if self.__gpa >= 3.5:
+            return "Cum Laude"
+        elif self.__gpa >= 2.5:
+            return "Good"
+        else:
+            return "Remedial"
+
+
+# -----------------------------
+# BAGIAN TESTING / EKSEKUSI
+# -----------------------------
+if __name__ == "__main__":
+    s = Student("S100", "Ana", 3.1)
+
+    print("Name:", s.name)          # akses public
+    print("GPA:", s.get_gpa())      # akses private via getter
+
+    s.set_gpa(3.75)
+    print("Updated GPA:", s.get_gpa())
+
+    s.add_credits(3)
+    print("Credits:", s._credits)   # akses protected (contoh)
+
+    print("Classification:", s.classify())

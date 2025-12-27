@@ -1,0 +1,240 @@
+from datetime import date, timedelta
+import random
+
+# Global variable untuk simulasi ID Peminjaman
+ID_PINJAMAN_COUNTER = 1000
+
+# --- C. Relasi 1: Buku ↔ Peminjaman (Association) ---
+# --- C. Relasi 2: Anggota ↔ Peminjaman (Aggregation) ---
+
+class Buku:
+    def __init__(self, judul: str, penulis: str, kode_buku: str, stok: int = 1, lokasi_rak: str = "A01"):
+        # 2a. Public
+        self.judul = judul
+        self.penulis = penulis
+        self.kode_buku = kode_buku
+        # 2b. Protected
+        self._stok = stok
+        # 2c. Private
+        self.__lokasi_rak = lokasi_rak
+
+    # 1a. Getter/Setter Lokasi Rak (Private)
+    def get_lokasi_rak(self):
+        return self.__lokasi_rak
+
+    def set_lokasi_rak(self, rak_baru: str):
+        self.__lokasi_rak = rak_baru
+
+    # 1b. Tambah_stok
+    def tambah_stok(self, jumlah: int):
+        if jumlah < 0:
+            raise ValueError("Jumlah stok harus positif.")
+        self._stok += jumlah
+        print(f"[INFO] Stok '{self.judul}' ditambah {jumlah}. Stok baru: {self._stok}")
+
+    # 1b. Kurangi_stok
+    def kurangi_stok(self, jumlah: int):
+        if jumlah < 0:
+            raise ValueError("Jumlah stok harus positif.")
+        if self._stok < jumlah:
+            raise ValueError(f"Stok buku '{self.judul}' tidak mencukupi. Sisa: {self._stok}")
+        self._stok -= jumlah
+        # Tidak ada output, karena dipanggil dari metode Anggota
+
+    def __str__(self):
+        return f"[{self.kode_buku}] {self.judul} oleh {self.penulis}"
+
+class Peminjaman:
+    def __init__(self, kode_buku: str):
+        global ID_PINJAMAN_COUNTER
+        self.id_peminjaman = f"P{ID_PINJAMAN_COUNTER}"
+        ID_PINJAMAN_COUNTER += 1
+        
+        # 4. Atribut Peminjaman
+        self.kode_buku = kode_buku
+        self.tanggal_pinjam = date.today()
+        # Batas pengembalian 7 hari
+        self.tanggal_kembali = self.tanggal_pinjam + timedelta(days=7) 
+        self.status = "Dipinjam" # Status awal
+
+    # 3. Class Peminjaman: info_peminjaman()
+    def info_peminjaman(self):
+        return (f"ID: {self.id_peminjaman} | Kode Buku: {self.kode_buku} | "
+                f"Pinjam: {self.tanggal_pinjam} | Kembali: {self.tanggal_kembali} | "
+                f"Status: {self.status}")
+
+    def __str__(self):
+        return f"{self.id_peminjaman} ({self.kode_buku})"
+
+class Anggota:
+    def __init__(self, id_anggota: str, nama: str, maks_pinjam: int = 2, status_aktif: bool = True):
+        # 3a. Public
+        self.id_anggota = id_anggota
+        self.nama = nama
+        # 3b. Protected
+        self._maks_pinjam = maks_pinjam
+        # 3c. Private
+        self.__status_aktif = status_aktif
+        # 3d. Aggregation
+        self.daftar_peminjaman: list[Peminjaman] = []
+
+    # 2a. Getter/Setter Status (Private)
+    def get_status_aktif(self):
+        return self.__status_aktif
+
+    def set_status_aktif(self, status_baru: bool):
+        self.__status_aktif = status_baru
+        
+    # 2b. pinjam_buku()
+    def pinjam_buku(self, buku: Buku):
+        if not self.__status_aktif:
+            print(f"[Gagal] {self.nama} tidak aktif. Tidak bisa meminjam.")
+            return
+
+        if len([p for p in self.daftar_peminjaman if p.status == "Dipinjam"]) >= self._maks_pinjam:
+            print(f"[Gagal] {self.nama} telah mencapai batas maksimal pinjam ({self._maks_pinjam} buku).")
+            return
+        
+        try:
+            buku.kurangi_stok(1) # Kurangi stok buku
+            peminjaman_baru = Peminjaman(buku.kode_buku) # Buat objek Peminjaman baru (Aggregation)
+            self.daftar_peminjaman.append(peminjaman_baru)
+            print(f"[SUCCESS] {self.nama} berhasil meminjam '{buku.judul}'. ({peminjaman_baru.id_peminjaman})")
+        except ValueError as e:
+            print(f"[Gagal] Peminjaman gagal: {e}")
+
+    # 2b. kembalikan_buku()
+    def kembalikan_buku(self, kode_buku: str, daftar_buku: dict[str, Buku]):
+        peminjaman_aktif = [p for p in self.daftar_peminjaman if p.kode_buku == kode_buku and p.status == "Dipinjam"]
+        
+        if not peminjaman_aktif:
+            print(f"[Gagal] {self.nama} tidak memiliki peminjaman aktif untuk kode buku '{kode_buku}'.")
+            return
+            
+        p = peminjaman_aktif[0]
+        p.status = "Dikembalikan"
+        
+        if kode_buku in daftar_buku:
+            daftar_buku[kode_buku].tambah_stok(1) # Tambah stok buku
+            print(f"[SUCCESS] {self.nama} berhasil mengembalikan '{daftar_buku[kode_buku].judul}'.")
+        else:
+            print(f"[WARNING] Buku dengan kode '{kode_buku}' tidak ditemukan di daftar utama.")
+            
+    def info_peminjaman_anggota(self):
+        if not self.daftar_peminjaman:
+            return "Tidak ada riwayat peminjaman."
+        
+        info = [p.info_peminjaman() for p in self.daftar_peminjaman]
+        return "\n    - " + "\n    - ".join(info)
+
+    def __str__(self):
+        status = "Aktif" if self.__status_aktif else "Nonaktif"
+        return f"Anggota ID: {self.id_anggota}, Nama: {self.nama}, Batas Pinjam: {self._maks_pinjam}, Status: {status}"
+
+
+# --- C. Relasi 3: Perpustakaan ↔ Buku (Composition) ---
+class Perpustakaan:
+    def __init__(self, nama: str):
+        self.nama = nama
+        # Composition: Buku tidak dapat eksis tanpa Perpustakaan ini
+        self.katalog: dict[str, Buku] = {} 
+        self.daftar_anggota: dict[str, Anggota] = {}
+
+    def tambah_buku(self, buku: Buku):
+        if buku.kode_buku in self.katalog:
+            print(f"[Gagal] Kode buku {buku.kode_buku} sudah ada.")
+            return
+        self.katalog[buku.kode_buku] = buku
+        print(f"[SUCCESS] Buku '{buku.judul}' ditambahkan ke katalog.")
+
+    def tambah_anggota(self, anggota: Anggota):
+        if anggota.id_anggota in self.daftar_anggota:
+            print(f"[Gagal] ID Anggota {anggota.id_anggota} sudah terdaftar.")
+            return
+        self.daftar_anggota[anggota.id_anggota] = anggota
+        print(f"[SUCCESS] Anggota '{anggota.nama}' didaftarkan.")
+        
+    def get_buku(self, kode: str) -> Buku | None:
+        return self.katalog.get(kode)
+
+# ====================================================================
+# D. INSTANSIASI & E. DEMONSTRASI PROGRAM
+# ====================================================================
+
+if __name__ == "__main__":
+    
+    perpus = Perpustakaan("Perpus ITBontang")
+    print(f"--- Selamat Datang di {perpus.nama} ---")
+    print("---------------------------------------")
+
+    # D1. Buat 3 buku (dan tambahkan ke Perpustakaan - Composition)
+    buku_a = Buku("Pemrograman Python Lanjut", "A. Bakri", "PPL-001", stok=5, lokasi_rak="B12")
+    buku_b = Buku("Basis Data Modern", "C. Dewi", "BDM-002", stok=3, lokasi_rak="C05")
+    buku_c = Buku("Struktur Algoritma", "E. Fajar", "SA-003", stok=1, lokasi_rak="A01")
+    
+    perpus.tambah_buku(buku_a)
+    perpus.tambah_buku(buku_b)
+    perpus.tambah_buku(buku_c)
+
+    # D2. Buat 2 anggota (dan tambahkan ke Perpustakaan)
+    anggota_1 = Anggota("A001", "Budi Santoso", maks_pinjam=2)
+    anggota_2 = Anggota("A002", "Siti Aisyah", maks_pinjam=3)
+    
+    perpus.tambah_anggota(anggota_1)
+    perpus.tambah_anggota(anggota_2)
+    
+    print("\n" + "="*50)
+    print("DEMO TRANSAKSI")
+    print("="*50)
+
+    # D3. Anggota 1 pinjam 2 buku
+    print(f"[{anggota_1.nama} meminjam buku...]")
+    anggota_1.pinjam_buku(buku_a) # PPL-001
+    anggota_1.pinjam_buku(buku_b) # BDM-002
+    anggota_1.pinjam_buku(buku_c) # Coba pinjam buku ke-3 (Seharusnya gagal karena batas maks 2)
+    
+    print("\n" + "-"*50)
+    
+    # D4. Anggota 2 pinjam 1 buku
+    print(f"[{anggota_2.nama} meminjam buku...]")
+    anggota_2.pinjam_buku(buku_a) # PPL-001
+    
+    # E1. Informasi buku dan stoknya
+    print("\n" + "="*50)
+    print("E1. INFORMASI BUKU DAN STOK")
+    print("="*50)
+    
+    for kode, buku in perpus.katalog.items():
+        print(f"Buku: {buku.judul}")
+        print(f"  Kode: {buku.kode_buku}, Penulis: {buku.penulis}")
+        print(f"  Stok Tersisa (Protected): {buku._stok}")
+        print(f"  Lokasi Rak (Private via Getter): {buku.get_lokasi_rak()}")
+        print("-" * 25)
+
+    # D5. Pengembalian buku
+    print("\n" + "="*50)
+    print("D5. PENGEMBALIAN BUKU")
+    print("="*50)
+    
+    # Anggota 1 mengembalikan BDM-002
+    anggota_1.kembalikan_buku("BDM-002", perpus.katalog)
+    print(f"Stok BDM-002 setelah dikembalikan: {perpus.get_buku('BDM-002')._stok}")
+
+    # E2. Informasi anggota
+    print("\n" + "="*50)
+    print("E2. INFORMASI ANGGOTA")
+    print("="*50)
+    
+    print(str(anggota_1))
+    print(str(anggota_2))
+    
+    # E3. Daftar peminjaman masing-masing anggota
+    print("\n" + "="*50)
+    print("E3. DAFTAR PEMINJAMAN ANGGOTA")
+    print("="*50)
+    
+    print(f"--- Peminjaman {anggota_1.nama} ---")
+    print(anggota_1.info_peminjaman_anggota())
+    
+    print(f"\n--- Peminjaman {anggota_2.nama} ---")
+    print(anggota_2.info_peminjaman_anggota())

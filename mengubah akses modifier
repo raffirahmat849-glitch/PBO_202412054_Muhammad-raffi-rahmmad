@@ -1,0 +1,114 @@
+class ProgramStudi:
+    # 1. Public: kode
+    # 2. Protected: _ketua
+    # 3. Private: __anggaran
+    def __init__(self, kode, ketua):
+        self.kode = kode                
+        self._ketua = ketua             
+        self.__anggaran = 500000000   
+        
+    # Getter protected 
+    def get_ketua(self): 
+        return self._ketua 
+    
+    # Setter protected 
+    def set_ketua(self, nama_baru): 
+        if not nama_baru: 
+            raise ValueError("Nama ketua tidak boleh kosong.") 
+        self._ketua = nama_baru 
+
+    # Getter private (wajib karena __anggaran private) 
+    def get_anggaran(self): 
+        return self.__anggaran 
+    
+    # Setter private 
+    def set_anggaran(self, nilai): 
+        if nilai < 0: 
+            raise ValueError("Anggaran tidak boleh negatif.") 
+        self.__anggaran = nilai 
+
+    def kurangi_anggaran(self, jumlah): 
+        if jumlah < 0: 
+            raise ValueError("Jumlah harus positif.") 
+        if jumlah > self.__anggaran: 
+            raise ValueError("Anggaran tidak mencukupi.") 
+        self.__anggaran -= jumlah 
+        return self.__anggaran
+
+# a. Buat class Mahasiswa
+class Mahasiswa:
+    def __init__(self, nim, nama, semester=1, ipk=0.0):
+        # Public
+        self.nim = nim
+        self.nama = nama
+        # Protected
+        self._semester = semester
+        # Private
+        self.__ipk = ipk
+
+    # --- Getter dan Setter untuk Protected (_semester) ---
+    def get_semester(self):
+        return self._semester
+
+    def set_semester(self, nilai_baru):
+        if nilai_baru < 1:
+            raise ValueError("Semester minimal adalah 1.")
+        self._semester = nilai_baru
+
+    # --- Getter dan Setter untuk Private (__ipk) ---
+    def get_ipk(self):
+        return self.__ipk
+
+    def set_ipk(self, nilai_baru):
+        if not (0.0 <= nilai_baru <= 4.0):
+            raise ValueError("IPK harus antara 0.0 dan 4.0")
+        self.__ipk = round(nilai_baru, 2)
+
+
+# Contoh penggunaan (melanjutkan baris 35 dan seterusnya)
+if __name__ == "__main__":
+    print("=" * 30)
+    print("PROGRAM STUDI - ENCAPSULATION")
+    print("=" * 30)
+    ps = ProgramStudi("TI", "Pak Wayan")
+    
+    # Akses ProgramStudi
+    print(f"Kode: {ps.kode} (Public)")
+    print(f"Ketua Prodi: {ps.get_ketua()} (Protected via Getter)")
+    print(f"Anggaran: {ps.get_anggaran():,} (Private via Getter)")
+    
+    ps.set_ketua("Bu Diah")
+    print(f"Ketua Prodi (baru): {ps.get_ketua()}")
+    
+    ps.kurangi_anggaran(100000000)
+    print(f"Anggaran Tersisa: {ps.get_anggaran():,}")
+    
+    print("\n" + "=" * 30)
+    print("MAHASISWA - ENCAPSULATION")
+    print("=" * 30)
+
+    # b. Buat objek 2 Mahasiswa
+    mhs1 = Mahasiswa("23001", "Budi", semester=2, ipk=3.75)
+    mhs2 = Mahasiswa("23002", "Siti", semester=1, ipk=2.90)
+
+    # Tampilkan data awal Mahasiswa 1
+    print("--- Data Awal Mahasiswa 1 (Budi) ---")
+    print(f"NIM: {mhs1.nim} (Public)")
+    print(f"Nama: {mhs1.nama} (Public)")
+    print(f"Semester: {mhs1.get_semester()} (Protected via Getter)")
+    print(f"IPK: {mhs1.get_ipk()} (Private via Getter)")
+    
+    # c. Ganti semester dan IPK Mahasiswa 1
+    mhs1.set_semester(3)
+    mhs1.set_ipk(3.95)
+    
+    print("\n--- Data Setelah Update Mahasiswa 1 ---")
+    print(f"Semester Baru: {mhs1.get_semester()}")
+    print(f"IPK Baru: {mhs1.get_ipk()}")
+    
+    # Tampilkan data Mahasiswa 2
+    print("\n--- Data Mahasiswa 2 (Siti) ---")
+    print(f"NIM: {mhs2.nim}")
+    print(f"Nama: {mhs2.nama}")
+    print(f"Semester: {mhs2.get_semester()}")
+    print(f"IPK: {mhs2.get_ipk()}")

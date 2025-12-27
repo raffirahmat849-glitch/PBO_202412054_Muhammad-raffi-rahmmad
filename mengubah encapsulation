@@ -1,0 +1,61 @@
+class Student:
+    # PERBAIKAN: Mengganti _init_ dengan __init__
+    def __init__(self, sid, name, gpa=0.0):
+        self.sid = sid
+        self.name = name
+        self._credits = 0
+        # Menggunakan __gpa agar privat
+        self.__gpa = gpa 
+
+    def get_gpa(self):
+        return self.__gpa
+    
+    def set_gpa(self, value):
+        if not (0.0 <= value <= 4.0):
+            raise ValueError("GPA harus antara 0.0 dan 4.0")
+        self.__gpa = round(value, 2)
+    
+    def add_credits(self, n):
+        if n < 0:
+            raise ValueError("credits tidak boleh negatif")
+        self._credits += n
+
+    # --- PENAMBAHAN METHOD BARU ---
+    def classify(self):
+        """
+        Mengembalikan predikat kelulusan berdasarkan nilai GPA saat ini.
+        """
+        gpa = self.__gpa
+        
+        if gpa >= 3.5:
+            return "Cum Laude"
+        elif gpa >= 2.5: # Secara implisit berarti 2.5 <= gpa < 3.5
+            return "Good"
+        else: # Secara implisit berarti gpa < 2.5
+            return "Remedial"
+    # --- AKHIR PENAMBAHAN ---
+
+# PERBAIKAN: Mengganti _name_ == _main_ dengan __name__ == "__main__"
+if __name__ == "__main__":
+    # Inisiasi dengan GPA 3.1
+    s = Student("S100", "Ana", 3.1)
+    
+    print(f"Nama Siswa: {s.name}")
+    print(f"IPK Awal: {s.get_gpa()}")
+    
+    # --- CONTOH PENGGUNAAN KLASIFIKASI AWAL (GPA 3.1 -> Good) ---
+    print(f"Predikat Awal: {s.classify()}") 
+    # ----------------------------------------------------------------
+    
+    # Perbarui GPA menjadi 3.75
+    s.set_gpa(3.75)
+    
+    print("-" * 25)
+    print(f"IPK Setelah Diperbarui: {s.get_gpa()}")
+    
+    # --- CONTOH PENGGUNAAN KLASIFIKASI SETELAH UPDATE (GPA 3.75 -> Cum Laude) ---
+    print(f"Predikat Baru: {s.classify()}") 
+    # ----------------------------------------------------------------
+    
+    s.add_credits(3)
+    print(f"Total SKS: {s._credits}")
